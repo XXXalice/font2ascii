@@ -1,5 +1,7 @@
 import curses
 import sys
+import time
+import math
 from pyfiglet import Figlet
 
 
@@ -33,12 +35,60 @@ class RenderAscii(Test):
         #コンストラクタでinitscrを実行してしまうとターミナルがバグる（知識不足のため原因究明不可）
 
 
-    def ascii_main(self):
+    def ascii_main(self, preformatted_aa, mode='static'):
+
+        def _print_static(aa):
+            out = '\n'.join(aa[0])
+            return out
+
+        def _print_animation(aa, num=math.inf):
+            # outs = []
+            # for i in aa:
+            #     out = '\n'.join(i)
+            #     print(out)
+            #     outs.append(out)
+            outs = ['\n'.join(i) for i in aa]
+
+            return outs
+
+        PRINT_FUNC = {
+            'static': lambda aa: _print_static(aa),
+            'animation': lambda aa: _print_animation(aa)
+        }
+
         self.stdscr = curses.initscr() #ここでやれ！
+        curses.noecho()
         self.stdscr.clear()
-        self.stdscr.addstr('hello')
-        self.stdscr.refresh()
-        self.stdscr.getkey()
+        try:
+            out = PRINT_FUNC[mode](preformatted_aa)
+            if type(out) is list:
+                try:
+                    while True:
+                        for aa in out:
+                            self.stdscr.clear()
+                            self.stdscr.addstr(aa)
+                            self.stdscr.refresh()
+                            time.sleep(0.1)
+                except Exception as e:
+
+                    curses.nocbreak()
+                    curses.echo()
+                    self.stdscr.keypad(False)
+                    curses.endwin()
+                    print(e)
+                    exit(0)
+            else:
+                self.stdscr.addstr('none')
+                self.stdscr.refresh()
+                self.stdscr.getkey()
+        except Exception as e:
+            pass
+        finally:
+            curses.nocbreak()
+            curses.echo()
+            self.stdscr.keypad(False)
+            curses.endwin()
+            exit(0)
 
     def get_ascii_art(self, title, *args_font):
         self.aa_container = []
@@ -71,9 +121,10 @@ class RenderAscii(Test):
 
 def main():
     aa = RenderAscii()
-    target = 'FUCK'
-    preformatted_aa = aa.get_ascii_art(target, 'standard', 'slant')
-    aa.test_show(preformatted_aa)
+    target = 'Syamu'
+    preformatted_aa = aa.get_ascii_art(target, 'standard', 'block', 'slant', 'catwalk')
+    # aa.test_show(preformatted_aa)
+    aa.ascii_main(preformatted_aa, mode='animation')
 
 
 if __name__ == '__main__':
